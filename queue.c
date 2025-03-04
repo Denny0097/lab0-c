@@ -22,14 +22,14 @@ struct list_head *q_new()
 /* Free all storage used by queue */
 void q_free(struct list_head *head)
 {
-    struct list_head *del = NULL;
-    for (struct list_head *cur = head->next; cur != head; cur = cur->next) {
-        if (cur)
-            del = cur;
-        free(list_entry(del, element_t, list));
+    if (!head)
+        return;
+    struct list_head *cur, *safe;
+    list_for_each_safe (cur, safe, head) {
+        list_del(cur);
+        q_release_element(list_entry(cur, element_t, list));
     }
-    if (head)
-        free(head);
+    free(head);
 }
 
 /* Insert an element at head of queue */
