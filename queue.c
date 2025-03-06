@@ -68,15 +68,13 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
     if (!head || list_empty(head))
         return NULL;
-    element_t *pos = list_entry(head->next, element_t, list);
+    element_t *entry = list_entry(head->next, element_t, list);
 
-    if (sp && bufsize) {
-        strncpy(sp, pos->value, bufsize - 1);
-        sp[bufsize - 1] = '\0';
-    }
+    strncpy(sp, entry->value, bufsize - 1);
+    sp[bufsize - 1] = '\0';
 
-    list_del(&pos->list);
-    return pos;
+    list_del_init(head->next);
+    return entry;
 }
 
 /* Remove an element from tail of queue */
@@ -86,12 +84,10 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
     element_t *pos = list_entry(head->prev, element_t, list);
 
-    if (sp && bufsize) {
-        strncpy(sp, pos->value, bufsize - 1);
-        sp[bufsize - 1] = '\0';
-    }
+    strncpy(sp, pos->value, bufsize - 1);
+    sp[bufsize - 1] = '\0';
 
-    list_del(&pos->list);
+    list_del_init(head->prev);
     return pos;
 }
 
@@ -234,7 +230,29 @@ void q_sort(struct list_head *head, bool descend) {}
 int q_ascend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+
+    int elementNum = q_size(head);
+
+    const struct list_head *min = head->prev;
+    struct list_head *cur = head->prev;
+
+    while (cur != head) {
+        if (strcmp(list_entry(min->prev, element_t, list)->value,
+                   list_entry(cur, element_t, list)->value) < 0) {
+            struct list_head *del = cur;
+            cur = cur->prev;
+            element_t *entry = list_entry(del, element_t, list);
+            list_del(del);
+            q_release_element(entry);
+            elementNum--;
+        } else {
+            min = cur;
+            cur = cur->prev;
+        }
+    }
+    return elementNum;
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
