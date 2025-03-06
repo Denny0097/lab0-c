@@ -39,8 +39,14 @@ bool q_insert_head(struct list_head *head, char *s)
         return false;
 
     element_t *node = malloc(sizeof(element_t));
+    if (!node)
+        return false;
 
     node->value = malloc((strlen(s) + 1) * sizeof(char));
+    if (!node->value) {
+        free(node);
+        return false;
+    }
     strncpy(node->value, s, strlen(s) + 1);
 
     list_add(&node->list, head);
@@ -55,8 +61,14 @@ bool q_insert_tail(struct list_head *head, char *s)
         return false;
 
     element_t *node = malloc(sizeof(element_t));
+    if (!node)
+        return false;
 
     node->value = malloc((strlen(s) + 1) * sizeof(char));
+    if (!node->value) {
+        free(node);
+        return false;
+    }
     strncpy(node->value, s, strlen(s) + 1);
 
     list_add_tail(&node->list, head);
@@ -239,7 +251,7 @@ int q_ascend(struct list_head *head)
     struct list_head *cur = head->prev;
 
     while (cur != head) {
-        if (strcmp(list_entry(min->prev, element_t, list)->value,
+        if (strcmp(list_entry(min, element_t, list)->value,
                    list_entry(cur, element_t, list)->value) < 0) {
             struct list_head *del = cur;
             cur = cur->prev;
@@ -260,7 +272,29 @@ int q_ascend(struct list_head *head)
 int q_descend(struct list_head *head)
 {
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    if (!head || list_empty(head))
+        return 0;
+
+    int elementNum = q_size(head);
+
+    const struct list_head *max = head->prev;
+    struct list_head *cur = head->prev;
+
+    while (cur != head) {
+        if (strcmp(list_entry(max, element_t, list)->value,
+                   list_entry(cur, element_t, list)->value) > 0) {
+            struct list_head *del = cur;
+            cur = cur->prev;
+            element_t *entry = list_entry(del, element_t, list);
+            list_del(del);
+            q_release_element(entry);
+            elementNum--;
+        } else {
+            max = cur;
+            cur = cur->prev;
+        }
+    }
+    return elementNum;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending/descending
