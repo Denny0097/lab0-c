@@ -234,8 +234,71 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
+void merge(struct list_head *head, struct list_head *left, bool descend)
+{
+    struct list_head *curOfLeft = left->next;
+    struct list_head *curOfRight = head->next;
+    struct list_head *nextOps = NULL;
+    struct list_head result;
+
+    INIT_LIST_HEAD(&result);
+
+    while (curOfLeft != left && curOfRight != head && descend) {
+        if (strcmp(list_entry(curOfLeft, element_t, list)->value,
+                   list_entry(curOfRight, element_t, list)->value) < 0) {
+            nextOps = curOfRight->next;
+            list_move_tail(curOfRight, &result);
+            curOfRight = nextOps;
+        } else {
+            nextOps = curOfLeft->next;
+            list_move_tail(curOfLeft, &result);
+            curOfLeft = nextOps;
+        }
+    }
+    while (curOfLeft != left && curOfRight != head && !descend) {
+        if (strcmp(list_entry(curOfLeft, element_t, list)->value,
+                   list_entry(curOfRight, element_t, list)->value) > 0) {
+            nextOps = curOfRight->next;
+            list_move_tail(curOfRight, &result);
+            curOfRight = nextOps;
+        } else {
+            nextOps = curOfLeft->next;
+            list_move_tail(curOfLeft, &result);
+            curOfLeft = nextOps;
+        }
+    }
+
+    if (list_empty(left)) {
+        // Append remaining nodes from left
+        list_splice_tail_init(head, &result);
+    } else {
+        // Append remaining nodes from right
+        list_splice_tail_init(left, &result);
+    }
+    list_splice_tail_init(&result, head);
+}
+
 /* Sort elements of queue in ascending/descending order */
-void q_sort(struct list_head *head, bool descend) {}
+void q_sort(struct list_head *head, bool descend)
+{
+    if (!head || list_empty(head) || head->next->next == head)
+        return;
+
+    // find mid
+    struct list_head *forward = head->next, *backward = head->prev;
+    while (forward != backward && forward->next != backward) {
+        forward = forward->next;
+        backward = backward->prev;
+    }
+    struct list_head left;
+    struct list_head *mid = forward;
+
+    list_cut_position(&left, head, mid);
+    q_sort(&left, descend);
+    q_sort(head, descend);
+    merge(head, &left, descend);
+}
+
 
 /* Remove every node which has a node with a strictly less value anywhere to
  * the right side of it */
